@@ -1,0 +1,22 @@
+services:
+  servidor:
+    image: python:3-slim
+    command: >
+      python3 -c "import http.server,random,string;
+      F='MINI{'+''.join(random.choices(string.ascii_lowercase+string.digits,k=6))+'}';
+      H=type('H',(http.server.BaseHTTPRequestHandler,),{'do_GET':lambda s:(s.send_response(200),s.end_headers(),s.wfile.write(('secreto='+F+'\n').encode())),'log_message':lambda *a:None});
+      http.server.HTTPServer(('',8080),H).serve_forever()"
+    networks: { lab: { ipv4_address: 172.30.0.10 } }
+  cliente:
+    image: curlimages/curl
+    command: sh -c 'while true; do curl -s http://172.30.0.10:8080/; sleep 3; done'
+    networks: { lab: { ipv4_address: 172.30.0.20 } }
+  atacante:
+    image: ubuntu:22.04
+    command: sleep infinity
+    cap_add: [NET_ADMIN, NET_RAW]
+    networks: { lab: { ipv4_address: 172.30.0.40 } }
+networks:
+  lab:
+    ipam:
+      config: [{ subnet: 172.30.0.0/24 }]
